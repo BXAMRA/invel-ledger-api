@@ -79,7 +79,7 @@ if (app()->environment("local")) {
   });
 
   Route::get("/preview-payment-due", function () {
-    $document = new \App\Models\Document([
+    $document = new Document([
       "document_number" => "#INV-004",
       "due_date" => "2026-08-05",
       "balance" => 25000,

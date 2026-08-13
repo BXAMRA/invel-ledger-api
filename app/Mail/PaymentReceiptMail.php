@@ -18,8 +18,9 @@ class PaymentReceiptMail extends BaseMailable
    * @param Document $document
    * @param Payment $payment
    * @param array<int, mixed> $otherPendingInvoices
+   * @param array<string, mixed> $settings
    */
-  public function __construct(public Document $document, public Payment $payment, public array $otherPendingInvoices = []) {}
+  public function __construct(public Document $document, public Payment $payment, public array $otherPendingInvoices = [], public array $settings = []) {}
 
   public function envelope(): Envelope
   {

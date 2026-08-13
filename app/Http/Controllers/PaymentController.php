@@ -6,6 +6,7 @@ use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
 use App\Models\Document;
 use App\Models\Payment;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -92,7 +93,8 @@ class PaymentController extends Controller
         )
         ->all();
 
-      $mail = new PaymentReceiptMail($doc, $payment, $otherPendingInvoices);
+      $settings = Setting::query()->pluck("value", "key")->toArray();
+      $mail = new PaymentReceiptMail($doc, $payment, $otherPendingInvoices, $settings);
 
       $targetEmail = app()->environment("local") ? env("MAIL_TEST_EMAIL", $email) : $email;
       Mail::to($targetEmail)->later(now()->addMinutes(5), $mail);

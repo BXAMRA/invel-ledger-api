@@ -69,8 +69,6 @@ class SendOverdueReminders extends Command
           }
         }
 
-        $invoiceLink = "https://bxamra.dev/invoices/" . $customer->slug . "/" . $doc->document_number;
-
         $mail = new PaymentOverdueMail($doc, $settings, $pdfPath);
         $targetEmail = app()->environment("local") ? env("MAIL_TEST_EMAIL", $email) : $email;
 
