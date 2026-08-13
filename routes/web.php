@@ -38,14 +38,18 @@ if (app()->environment("local")) {
 
   // New Payment Receipt test route
   Route::get("/preview-payment-receipt", function () {
-    $clientName = "Acme Corp";
-    $paymentAmount = 15000;
-    $invoiceNumber = "#INV-003";
-    $invoicePending = 4500;
+    $document = new Document([
+      "document_number" => "#INV-003",
+      "grand_total" => 45000,
+      "balance" => 4500,
+    ]);
+    $document->setRelation("customer", new \App\Models\Customer(["company_name" => "Acme Corp"]));
 
-    // Payment details you missed passing
-    $paymentMethod = "UPI";
-    $paymentReference = "UPI/123456789";
+    $payment = new \App\Models\Payment([
+      "amount" => 15000,
+      "payment_method" => "UPI",
+      "reference_number" => "UPI/123456789",
+    ]);
 
     $otherPendingInvoices = [
       [
@@ -62,7 +66,6 @@ if (app()->environment("local")) {
       ],
     ];
 
-    // Dummy settings array required for the new layout component
     $settings = [
       "company.name" => "BXAMRA IT Solutions",
       "company.addressLine1" => "Khurla Kingra",
@@ -74,8 +77,7 @@ if (app()->environment("local")) {
       "company.website" => "https://bxamra.dev",
     ];
 
-    // Fixed argument order: added paymentMethod, paymentReference, and settings
-    return new PaymentReceiptMail($clientName, $paymentAmount, $invoiceNumber, $invoicePending, $paymentMethod, $paymentReference, $otherPendingInvoices, $settings);
+    return new PaymentReceiptMail($document, $payment, $otherPendingInvoices, $settings);
   });
 
   Route::get("/preview-payment-due", function () {
