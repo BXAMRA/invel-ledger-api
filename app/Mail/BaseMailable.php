@@ -38,7 +38,7 @@ class BaseMailable extends Mailable implements ShouldQueue
 
     if ($useAccountsEmail) {
       $fromEmail = !empty($settings["company.accountsEmail"]) ? $settings["company.accountsEmail"] : $companyEmail;
-      $fromName = !empty($settings["company.emailHeaderName"]) . " Accounts";
+      $fromName = (!empty($settings["company.emailHeaderName"]) ? $settings["company.emailHeaderName"] : $companyName) . " Accounts";
     } else {
       $fromEmail = !empty($settings["company.senderEmail"]) ? $settings["company.senderEmail"] : $companyEmail;
       $fromName = $companyName;
