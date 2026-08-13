@@ -37,6 +37,24 @@ class PaymentReceiptMail extends BaseMailable
    */
   public function attachments(): array
   {
-    return [];
+    $this->document->refresh();
+
+    $attachments = [];
+    $docAttachments = $this->document->attachments ?? [];
+
+    if (is_array($docAttachments)) {
+      foreach ($docAttachments as $attachment) {
+        if (isset($attachment["label"]) && $attachment["label"] === "Invoice" && isset($attachment["path"])) {
+          if (\Illuminate\Support\Facades\Storage::disk("local")->exists($attachment["path"])) {
+            $attachments[] = Attachment::fromPath(\Illuminate\Support\Facades\Storage::disk("local")->path($attachment["path"]))
+              ->as($this->document->document_number . ".pdf")
+              ->withMime("application/pdf");
+          }
+          break;
+        }
+      }
+    }
+
+    return $attachments;
   }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Setting;
+use App\Models\Payment;
 use App\Models\Document;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -38,44 +39,33 @@ if (app()->environment("local")) {
 
   // New Payment Receipt test route
   Route::get("/preview-payment-receipt", function () {
-    $document = new Document([
-      "document_number" => "#INV-003",
-      "grand_total" => 45000,
-      "balance" => 4500,
-    ]);
-    $document->setRelation("customer", new \App\Models\Customer(["company_name" => "Acme Corp"]));
+    $payment = Payment::with("document.customer")->first();
 
-    $payment = new \App\Models\Payment([
-      "amount" => 15000,
-      "payment_method" => "UPI",
-      "reference_number" => "UPI/123456789",
-    ]);
+    if (!$payment) {
+      return "No payments found in the database to preview.";
+    }
 
-    $otherPendingInvoices = [
-      [
-        "invoice_number" => "#INV-001",
-        "total" => 50000,
-        "pending" => 30000,
-        "link" => "upi://pay?pa=YOUR_UPI_ID@BANK&pn=BXAMRA&tr=INV-001&am=30000&cu=INR",
-      ],
-      [
-        "invoice_number" => "#INV-002",
-        "total" => 15000,
-        "pending" => 15000,
-        "link" => "upi://pay?pa=YOUR_UPI_ID@BANK&pn=BXAMRA&tr=INV-002&am=15000&cu=INR",
-      ],
-    ];
+    $document = $payment->document;
+    $customer = $document->customer;
 
-    $settings = [
-      "company.name" => "BXAMRA IT Solutions",
-      "company.addressLine1" => "Khurla Kingra",
-      "company.city" => "Jalandhar",
-      "company.pincode" => "144014",
-      "company.phone" => "+91 8427 430 011",
-      "company.email" => "admin@bxamra.dev",
-      "company.accountsEmail" => "accounts@bxamra.dev",
-      "company.website" => "https://bxamra.dev",
-    ];
+    $otherPendingInvoices = Document::query()
+      ->where("customer_id", $customer->id)
+      ->where("type", "invoice")
+      ->where("id", "!=", $document->id)
+      ->where("balance", ">", 0)
+      ->whereNotIn("status", ["draft", "cancelled", "paid"])
+      ->get()
+      ->map(
+        fn($d) => [
+          "invoice_number" => $d->document_number,
+          "total" => $d->grand_total,
+          "pending" => $d->balance,
+          "link" => null,
+        ],
+      )
+      ->all();
+
+    $settings = Setting::query()->pluck("value", "key")->toArray();
 
     return new PaymentReceiptMail($document, $payment, $otherPendingInvoices, $settings);
   });
