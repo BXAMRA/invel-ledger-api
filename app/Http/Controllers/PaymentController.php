@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Mail;
 
 class PaymentController extends Controller
 {
+  /**
+   * @param \Illuminate\Http\Request $request
+   * @return \Illuminate\Http\JsonResponse
+   */
   public function index(Request $request): JsonResponse
   {
     $query = Payment::with("document.customer");
@@ -38,6 +42,10 @@ class PaymentController extends Controller
     return $this->success($payments);
   }
 
+  /**
+   * @param \App\Http\Requests\StorePaymentRequest $request
+   * @return \Illuminate\Http\JsonResponse
+   */
   public function store(StorePaymentRequest $request): JsonResponse
   {
     $validated = $request->validated();
@@ -93,6 +101,10 @@ class PaymentController extends Controller
     return $this->success($payment, "Payment recorded successfully", 201);
   }
 
+  /**
+   * @param \App\Models\Payment $payment
+   * @return \Illuminate\Http\JsonResponse
+   */
   public function show(Payment $payment): JsonResponse
   {
     $payment->load("document.customer");
@@ -100,6 +112,11 @@ class PaymentController extends Controller
     return $this->success($payment);
   }
 
+  /**
+   * @param \App\Http\Requests\UpdatePaymentRequest $request
+   * @param \App\Models\Payment $payment
+   * @return \Illuminate\Http\JsonResponse
+   */
   public function update(UpdatePaymentRequest $request, Payment $payment): JsonResponse
   {
     $validated = $request->validated();
@@ -131,6 +148,10 @@ class PaymentController extends Controller
     return $this->success($payment, "Payment updated successfully");
   }
 
+  /**
+   * @param \App\Models\Payment $payment
+   * @return \Illuminate\Http\JsonResponse
+   */
   public function destroy(Payment $payment): JsonResponse
   {
     DB::transaction(function () use ($payment) {

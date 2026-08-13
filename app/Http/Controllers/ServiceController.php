@@ -10,43 +10,64 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
-    public function index(Request $request): JsonResponse
-    {
-        $query = Service::query();
+  /**
+   * @param \Illuminate\Http\Request $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function index(Request $request): JsonResponse
+  {
+    $query = Service::query();
 
-        if ($request->has('search')) {
-            $search = $request->query('search');
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        $services = $query->latest()->paginate($request->query('per_page', 15));
-
-        return $this->success($services);
+    if ($request->has("search")) {
+      $search = $request->query("search");
+      $query->where("name", "like", "%{$search}%");
     }
 
-    public function store(StoreServiceRequest $request): JsonResponse
-    {
-        $service = Service::create($request->validated());
+    $services = $query->latest()->paginate($request->query("per_page", 15));
 
-        return $this->success($service, 'Service created successfully', 201);
-    }
+    return $this->success($services);
+  }
 
-    public function show(Service $service): JsonResponse
-    {
-        return $this->success($service);
-    }
+  /**
+   * @param \App\Http\Requests\StoreServiceRequest $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function store(StoreServiceRequest $request): JsonResponse
+  {
+    $service = Service::create($request->validated());
 
-    public function update(UpdateServiceRequest $request, Service $service): JsonResponse
-    {
-        $service->update($request->validated());
+    return $this->success($service, "Service created successfully", 201);
+  }
 
-        return $this->success($service, 'Service updated successfully');
-    }
+  /**
+   * @param \App\Models\Service $service
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function show(Service $service): JsonResponse
+  {
+    return $this->success($service);
+  }
 
-    public function destroy(Service $service): JsonResponse
-    {
-        $service->delete();
+  /**
+   * @param \App\Http\Requests\UpdateServiceRequest $request
+   * @param \App\Models\Service $service
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function update(UpdateServiceRequest $request, Service $service): JsonResponse
+  {
+    $service->update($request->validated());
 
-        return $this->success(null, 'Service deleted successfully');
-    }
+    return $this->success($service, "Service updated successfully");
+  }
+
+  /**
+   * @param \App\Models\Service $service
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function destroy(Service $service): JsonResponse
+  {
+    $service->delete();
+
+    return $this->success(null, "Service deleted successfully");
+  }
 }

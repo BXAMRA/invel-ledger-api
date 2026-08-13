@@ -192,5 +192,3 @@ Route::post("/setup/migrate", function () {
 
   return response()->json(["message" => "Migrations ran successfully", "output" => Artisan::output()]);
 });
-
-Route::post("/setup/import", [BackupController::class, "import"]);

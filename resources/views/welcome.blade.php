@@ -487,7 +487,7 @@
             log(`Uploading payload: ${file.name}...`, 'info');
 
             try {
-                const res = await fetch('/setup/import', {
+                const res = await fetch('/api/setup/restore', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': csrfToken,

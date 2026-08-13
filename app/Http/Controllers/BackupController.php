@@ -18,100 +18,131 @@ use Illuminate\Support\Facades\Response;
 
 class BackupController extends Controller
 {
-    public function export()
-    {
-        $timestamp = now()->toIso8601String();
+  /**
+   * @return \Illuminate\Http\Response
+   */
+  public function export()
+  {
+    $timestamp = now()->toIso8601String();
 
-        Setting::updateOrCreate(['key' => 'last_export_timestamp'], ['value' => $timestamp]);
+    Setting::query()->updateOrCreate(["key" => "last_export_timestamp"], ["value" => $timestamp]);
 
-        $backup = [
-            'version' => '2.0',
-            'timestamp' => $timestamp,
-            'users' => User::all()
-                ->makeVisible(['password', 'remember_token'])
-                ->toArray(),
-            'customers' => Customer::all(),
-            'services' => Service::all(),
-            'service_bundles' => ServiceBundle::with('services')->get(),
-            'documents' => Document::all(),
-            'document_items' => DocumentItem::all(),
-            'payments' => Payment::all(),
-            'settings' => Setting::all(),
-        ];
+    $backup = [
+      "version" => "2.0",
+      "timestamp" => $timestamp,
+      "users" => User::all()
+        ->makeVisible(["password", "remember_token"])
+        ->toArray(),
+      "customers" => Customer::all(),
+      "services" => Service::all(),
+      "service_bundles" => ServiceBundle::with("services")->get(),
+      "documents" => Document::all(),
+      "document_items" => DocumentItem::all(),
+      "payments" => Payment::all(),
+      "settings" => Setting::all(),
+    ];
 
-        return Response::make(json_encode($backup, JSON_PRETTY_PRINT), 200, [
-            'Content-Type' => 'application/json',
-            'Content-Disposition' => 'attachment; filename="invel-ledger-backup-'.now()->format('Y-m-d').'.json"',
-        ]);
+    return Response::make(json_encode($backup, JSON_PRETTY_PRINT), 200, [
+      "Content-Type" => "application/json",
+      "Content-Disposition" => 'attachment; filename="invel-ledger-backup-' . now()->format("Y-m-d") . '.json"',
+    ]);
+  }
+
+  /**
+   * @param \Illuminate\Http\Request $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function import(Request $request): JsonResponse
+  {
+    $request->validate([
+      "file" => "required|file|mimetypes:application/json,text/plain",
+    ]);
+
+    $data = json_decode(file_get_contents($request->file("file")->getRealPath()), true);
+
+    if (!isset($data["version"]) || $data["version"] !== "2.0") {
+      return $this->error("Invalid backup format. Only standard version 2.0 backups are supported.", 400);
     }
 
-    public function import(Request $request): JsonResponse
-    {
-        $request->validate([
-            'file' => 'required|file|mimetypes:application/json,text/plain',
-        ]);
+    DB::transaction(function () use ($data) {
+      DB::statement("PRAGMA foreign_keys=OFF;");
 
-        $data = json_decode(file_get_contents($request->file('file')->getRealPath()), true);
+      Payment::query()->delete();
+      DocumentItem::query()->delete();
+      Document::query()->delete();
+      DB::table("service_bundle_services")->delete();
+      ServiceBundle::query()->delete();
+      Service::query()->delete();
+      Customer::query()->delete();
+      Setting::query()->delete();
+      User::query()->delete();
 
-        if (! isset($data['version']) || $data['version'] !== '2.0') {
-            return $this->error('Invalid backup format. Only standard version 2.0 backups are supported.', 400);
+      $prepare = function (&$rows) {
+        if (!is_array($rows)) {
+          return;
         }
+        foreach ($rows as &$row) {
+          foreach ($row as $key => &$val) {
+            if (is_array($val)) {
+              $val = json_encode($val);
+            }
+          }
+        }
+      };
 
-        DB::transaction(function () use ($data) {
-            DB::statement('PRAGMA foreign_keys=OFF;');
+      if (isset($data["users"])) {
+        $prepare($data["users"]);
+        foreach ($data["users"] as &$user) {
+          if (!isset($user["password"])) {
+            $user["password"] = Hash::make("password");
+          }
+        }
+        User::query()->insert($data["users"]);
+      }
+      if (isset($data["customers"])) {
+        $prepare($data["customers"]);
+        Customer::query()->insert($data["customers"]);
+      }
+      if (isset($data["services"])) {
+        $prepare($data["services"]);
+        Service::query()->insert($data["services"]);
+      }
 
-            Payment::query()->delete();
-            DocumentItem::query()->delete();
-            Document::query()->delete();
-            DB::table('service_bundle_services')->delete();
-            ServiceBundle::query()->delete();
-            Service::query()->delete();
-            Customer::query()->delete();
-            Setting::query()->delete();
-            User::query()->delete();
+      if (isset($data["service_bundles"])) {
+        $prepare($data["service_bundles"]);
+        foreach ($data["service_bundles"] as $b) {
+          $services = $b["services"] ?? [];
+          unset($b["services"]);
+          $bundle = ServiceBundle::query()->create($b);
+          if (!empty($services)) {
+            if (is_string($services)) {
+              $services = json_decode($services, true);
+            }
+            $bundle->services()->sync(array_column($services, "id"));
+          }
+        }
+      }
 
-            if (isset($data['users'])) {
-                foreach ($data['users'] as &$user) {
-                    if (! isset($user['password'])) {
-                        $user['password'] = Hash::make('password');
-                    }
-                }
-                User::query()->insert($data['users']);
-            }
-            if (isset($data['customers'])) {
-                Customer::query()->insert($data['customers']);
-            }
-            if (isset($data['services'])) {
-                Service::query()->insert($data['services']);
-            }
+      if (isset($data["documents"])) {
+        $prepare($data["documents"]);
+        Document::query()->insert($data["documents"]);
+      }
+      if (isset($data["document_items"])) {
+        $prepare($data["document_items"]);
+        DocumentItem::query()->insert($data["document_items"]);
+      }
+      if (isset($data["payments"])) {
+        $prepare($data["payments"]);
+        Payment::query()->insert($data["payments"]);
+      }
+      if (isset($data["settings"])) {
+        $prepare($data["settings"]);
+        Setting::query()->insert($data["settings"]);
+      }
 
-            if (isset($data['service_bundles'])) {
-                foreach ($data['service_bundles'] as $b) {
-                    $services = $b['services'] ?? [];
-                    unset($b['services']);
-                    $bundle = ServiceBundle::create($b);
-                    if (! empty($services)) {
-                        $bundle->services()->sync(array_column($services, 'id'));
-                    }
-                }
-            }
+      DB::statement("PRAGMA foreign_keys=ON;");
+    });
 
-            if (isset($data['documents'])) {
-                Document::query()->insert($data['documents']);
-            }
-            if (isset($data['document_items'])) {
-                DocumentItem::query()->insert($data['document_items']);
-            }
-            if (isset($data['payments'])) {
-                Payment::query()->insert($data['payments']);
-            }
-            if (isset($data['settings'])) {
-                Setting::query()->insert($data['settings']);
-            }
-
-            DB::statement('PRAGMA foreign_keys=ON;');
-        });
-
-        return $this->success(null, 'Backup restored successfully');
-    }
+    return $this->success(null, "Backup restored successfully");
+  }
 }
