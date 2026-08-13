@@ -15,12 +15,31 @@ class PaymentReceiptMail extends BaseMailable
   use Queueable, SerializesModels;
 
   /**
+   * @var array<string, string>
+   */
+  public array $paymentLinks = [];
+
+  /**
    * @param Document $document
    * @param Payment $payment
    * @param array<int, mixed> $otherPendingInvoices
    * @param array<string, mixed> $settings
    */
-  public function __construct(public Document $document, public Payment $payment, public array $otherPendingInvoices = [], public array $settings = []) {}
+  public function __construct(public Document $document, public Payment $payment, public array $otherPendingInvoices = [], public array $settings = [])
+  {
+    $wallets = isset($settings["company.mobileWallets"]) ? json_decode($settings["company.mobileWallets"], true) : [];
+    if (is_array($wallets) && $document->balance > 0) {
+      foreach ($wallets as $w) {
+        if (empty($w["_deleted"])) {
+          $link = \App\Services\PaymentLinkService::generate($w["provider"], $w["value"], $document->balance, $document->document_number);
+          if ($link) {
+            $this->paymentLinks[$w["provider"]] = $link;
+          }
+          break;
+        }
+      }
+    }
+  }
 
   public function envelope(): Envelope
   {

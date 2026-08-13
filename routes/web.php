@@ -1,11 +1,13 @@
 <?php
 
-use App\Models\Setting;
-use App\Models\Payment;
-use App\Models\Document;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+
+use App\Models\Setting;
+use App\Models\Payment;
+use App\Models\Document;
+use App\Models\Customer;
 
 use App\Mail\BiMonthlyMail;
 use App\Mail\PaymentReceiptMail;
@@ -14,6 +16,8 @@ use App\Mail\ProjectQuotationMail;
 use App\Mail\FeedbackRequestMail;
 use App\Mail\InvoiceIssuedMail;
 use App\Mail\PaymentOverdueMail;
+
+use App\Services\PaymentLinkService;
 
 if (app()->environment("local")) {
   Route::get("/email-bi-monthly", function () {
@@ -39,14 +43,29 @@ if (app()->environment("local")) {
 
   // New Payment Receipt test route
   Route::get("/preview-payment-receipt", function () {
+    /** @var \App\Models\Payment $payment */
     $payment = Payment::with("document.customer")->first();
 
     if (!$payment) {
       return "No payments found in the database to preview.";
     }
 
+    /** @var \App\Models\Document $document */
     $document = $payment->document;
     $customer = $document->customer;
+
+    $settings = Setting::query()->pluck("value", "key")->toArray();
+
+    $wallets = isset($settings["company.mobileWallets"]) ? json_decode($settings["company.mobileWallets"], true) : [];
+    $primaryWallet = null;
+    if (is_array($wallets)) {
+      foreach ($wallets as $w) {
+        if (empty($w["_deleted"])) {
+          $primaryWallet = $w;
+          break;
+        }
+      }
+    }
 
     $otherPendingInvoices = Document::query()
       ->where("customer_id", $customer->id)
@@ -55,17 +74,20 @@ if (app()->environment("local")) {
       ->where("balance", ">", 0)
       ->whereNotIn("status", ["draft", "cancelled", "paid"])
       ->get()
-      ->map(
-        fn($d) => [
+      ->map(function (Document $d) use ($primaryWallet) {
+        $link = null;
+        if ($primaryWallet) {
+          $link = PaymentLinkService::generate($primaryWallet["provider"], $primaryWallet["value"], $d->balance, $d->document_number);
+        }
+        return [
           "invoice_number" => $d->document_number,
           "total" => $d->grand_total,
           "pending" => $d->balance,
-          "link" => null,
-        ],
-      )
+          "due" => $d->due_date,
+          "link" => $link,
+        ];
+      })
       ->all();
-
-    $settings = Setting::query()->pluck("value", "key")->toArray();
 
     return new PaymentReceiptMail($document, $payment, $otherPendingInvoices, $settings);
   });
@@ -76,7 +98,7 @@ if (app()->environment("local")) {
       "due_date" => "2026-08-05",
       "balance" => 25000,
     ]);
-    $document->setRelation("customer", new \App\Models\Customer(["company_name" => "Acme Corp"]));
+    $document->setRelation("customer", new Customer(["company_name" => "Acme Corp"]));
     $invoiceLink = "https://bxamra.dev/invoices/INV-004";
 
     // Dummy Settings Array
@@ -96,13 +118,13 @@ if (app()->environment("local")) {
   });
 
   Route::get("/preview-invoice-issued", function () {
-    $document = new \App\Models\Document([
+    $document = new Document([
       "document_number" => "#INV-005",
       "due_date" => "2026-08-25",
       "grand_total" => 45000,
       "balance" => 45000,
     ]);
-    $document->setRelation("customer", new \App\Models\Customer(["company_name" => "Acme Corp"]));
+    $document->setRelation("customer", new Customer(["company_name" => "Acme Corp"]));
     $invoiceLink = "https://bxamra.dev/invoices/INV-005";
 
     // Dummy Settings Array

@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/ping", function () {
-  return response()->json(["status" => "ok", "version" => "1.0.0"]);
+  return response()->json(["status" => "ok", "version" => "0.35.4"]);
 });
 Route::post("/login", [AuthController::class, "login"]);
 Route::post("/cleanup-token", [AuthController::class, "cleanupToken"]);

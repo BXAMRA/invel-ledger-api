@@ -11,11 +11,23 @@ class UpdatePaymentRequest extends FormRequest
     return true;
   }
 
+  protected function prepareForValidation(): void
+  {
+      $merge = [];
+      if ($this->has("payment_method")) {
+          $merge["payment_method"] = strtoupper($this->payment_method);
+      }
+      if ($this->has("reference_number") && !empty($this->reference_number)) {
+          $merge["reference_number"] = strtoupper($this->reference_number);
+      }
+      if (!empty($merge)) {
+          $this->merge($merge);
+      }
+  }
+
   /**
      * Get the validation rules that apply to the request.
-
      *
-
      * @return array<string, array<int, string>>
      */
   public function rules(): array

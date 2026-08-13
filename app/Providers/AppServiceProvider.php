@@ -21,7 +21,7 @@ class AppServiceProvider extends ServiceProvider
   public function boot(): void
   {
     RateLimiter::for("emails", function ($job) {
-      return Limit::perMinute(10);
+      return Limit::perSecond(1);
     });
 
     View::composer("components.email-layout", function ($view) {

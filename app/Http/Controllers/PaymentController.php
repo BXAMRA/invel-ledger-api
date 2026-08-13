@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePaymentRequest;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Models\Setting;
+use App\Services\PaymentLinkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,7 @@ class PaymentController extends Controller
   {
     $validated = $request->validated();
 
+    /** @var \App\Models\Payment $payment */
     $payment = DB::transaction(function () use ($validated) {
       $pay = Payment::query()->create($validated);
 
@@ -76,6 +78,19 @@ class PaymentController extends Controller
     $email = $customer->contact_email ?: $customer->email;
 
     if ($email) {
+      $settings = Setting::query()->pluck("value", "key")->toArray();
+
+      $wallets = isset($settings["company.mobileWallets"]) ? json_decode($settings["company.mobileWallets"], true) : [];
+      $primaryWallet = null;
+      if (is_array($wallets)) {
+        foreach ($wallets as $w) {
+          if (empty($w["_deleted"])) {
+            $primaryWallet = $w;
+            break;
+          }
+        }
+      }
+
       $otherPendingInvoices = Document::query()
         ->where("customer_id", $customer->id)
         ->where("type", "invoice")
@@ -83,17 +98,21 @@ class PaymentController extends Controller
         ->where("balance", ">", 0)
         ->whereNotIn("status", ["draft", "cancelled", "paid"])
         ->get()
-        ->map(
-          fn($d) => [
+        ->map(function ($d) use ($primaryWallet) {
+          $link = null;
+          if ($primaryWallet) {
+            $link = PaymentLinkService::generate($primaryWallet["provider"], $primaryWallet["value"], $d->balance, $d->document_number);
+          }
+          return [
             "invoice_number" => $d->document_number,
             "total" => $d->grand_total,
             "pending" => $d->balance,
-            "link" => null,
-          ],
-        )
+            "due" => $d->due_date,
+            "link" => $link,
+          ];
+        })
         ->all();
 
-      $settings = Setting::query()->pluck("value", "key")->toArray();
       $mail = new PaymentReceiptMail($doc, $payment, $otherPendingInvoices, $settings);
 
       $targetEmail = app()->environment("local") ? env("MAIL_TEST_EMAIL", $email) : $email;
