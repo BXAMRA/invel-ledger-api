@@ -116,7 +116,7 @@ class PaymentController extends Controller
       $mail = new PaymentReceiptMail($doc, $payment, $otherPendingInvoices, $settings);
 
       $targetEmail = app()->environment("local") ? env("MAIL_TEST_EMAIL", $email) : $email;
-      Mail::to($targetEmail)->later(now()->addMinutes(5), $mail);
+      Mail::to($targetEmail)->later(now()->addMinutes(2), $mail);
     }
 
     return $this->success($payment, "Payment recorded successfully", 201);
