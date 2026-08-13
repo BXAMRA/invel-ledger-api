@@ -1,8 +1,7 @@
 <?php
 
-use App\Http\Controllers\BackupController;
-use App\Models\Document;
 use App\Models\Setting;
+use App\Models\Document;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;

@@ -12,7 +12,7 @@
   </p>
 
   <p class="text-main" style="margin-bottom: 24px; font-size: 14px; color: #334155;">
-    We are reaching out because payment for invoice <strong>{{ $document->document_number }}</strong>, which was due on <strong>{{ $document->due_date?->format('F d, Y') ?? 'N/A' }}</strong>, is now past due. We know how busy things can get, so we just wanted to float this to the top of your inbox.
+    We are reaching out because payment for invoice <strong>{{ $document->document_number }}</strong>, which was due on <strong>{{ $document->due_date?->format('F d, Y') ?? 'N/A' }}</strong> is now past due. We know how busy things can get, so we just wanted to float this to the top of your inbox.
   </p>
 
   <!-- PDF Attachment Notice -->
