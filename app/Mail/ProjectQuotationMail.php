@@ -40,7 +40,7 @@ class ProjectQuotationMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.project_quotation");
+    return new Content(view: "emails.html.project_quotation");
   }
 
   /**

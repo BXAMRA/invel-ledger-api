@@ -48,7 +48,7 @@ class PaymentReceiptMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.payment_receipt");
+    return new Content(view: "emails.html.payment_receipt", text: "emails.text.payment_receipt_text");
   }
 
   /**

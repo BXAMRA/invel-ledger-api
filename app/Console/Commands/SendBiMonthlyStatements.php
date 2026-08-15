@@ -43,26 +43,13 @@ class SendBiMonthlyStatements extends Command
         continue;
       }
 
-      $invoicesData = [];
       $pdfPaths = [];
-
-      $upiId = Setting::query()->where("key", "company.bank.upiId")->value("value");
-      $companyName = Setting::query()->where("key", "company.name")->value("value") ?: "BXAMRA IT Solutions";
-      $companyNameEncoded = rawurlencode($companyName);
+      $settings = Setting::query()->pluck("value", "key")->map(function ($value) {
+        $decoded = json_decode($value, true);
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+      })->toArray();
 
       foreach ($customer->documents as $doc) {
-        $link = null;
-        if ($upiId) {
-          $link = "upi://pay?pa={$upiId}&pn={$companyNameEncoded}&tr={$doc->document_number}&am=" . number_format($doc->balance, 2, ".", "") . "&cu=INR";
-        }
-
-        $invoicesData[] = [
-          "invoice_number" => $doc->document_number,
-          "total" => $doc->grand_total,
-          "pending" => $doc->balance,
-          "link" => $link,
-        ];
-
         $generatedPdf = collect($doc->attachments ?? [])->firstWhere("label", "Invoice");
         if ($generatedPdf) {
           $pdfPaths[$doc->document_number] = $generatedPdf["path"];
@@ -75,7 +62,7 @@ class SendBiMonthlyStatements extends Command
         $this->info("Local environment detected. Rerouting email for {$customer->company_name} from {$email} to {$targetEmail}");
       }
 
-      Mail::to($targetEmail)->send(new BiMonthlyMail($invoicesData, $pdfPaths));
+      Mail::to($targetEmail)->send(new BiMonthlyMail($customer, $customer->documents, $settings, $pdfPaths));
 
       $logMsg = "Sent statement to {$targetEmail} for {$customer->company_name}";
       $this->info($logMsg);

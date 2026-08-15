@@ -28,7 +28,7 @@ class InvoiceIssuedMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.invoice_issued");
+    return new Content(view: "emails.html.invoice_issued");
   }
 
   /**

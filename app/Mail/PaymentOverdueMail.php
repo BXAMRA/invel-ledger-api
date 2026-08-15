@@ -64,7 +64,7 @@ class PaymentOverdueMail extends BaseMailable
   public function content(): Content
   {
     return new Content(
-      view: "emails.payment_overdue",
+      view: "emails.html.payment_overdue", text: "emails.text.payment_overdue_text",
       with: [
         "paymentLinks" => $this->paymentLinks,
       ],

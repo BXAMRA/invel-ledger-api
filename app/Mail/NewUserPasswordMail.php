@@ -26,7 +26,7 @@ class NewUserPasswordMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.new_user_password");
+    return new Content(view: "emails.html.new_user_password");
   }
 
   /**

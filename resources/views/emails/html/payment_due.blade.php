@@ -47,7 +47,7 @@
           <table cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td align="center" bgcolor="#2563eb" style="border-radius: 4px;">
-                <a href="{{ $upiLink }}" style="font-size: 12px; font-weight: bold; color: #ffffff; text-decoration: none; display: inline-block; padding: 8px 16px;">Pay via UPI App</a>
+                <a href="{{ $upiLink }}" style="font-size: 12px; font-weight: bold; color: #ffffff; text-decoration: none; display: inline-block; padding: 8px 16px;">Pay Now via UPI App</a>
               </td>
             </tr>
           </table>

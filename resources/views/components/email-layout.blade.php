@@ -54,6 +54,35 @@
   </style>
 </head>
 <body class="body-bg" style="margin: 0; padding: 0; background-color: #f8fafc; color: #334155; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  @php
+    foreach ($settings as $key => $val) {
+        if (is_string($val) && (str_starts_with(trim($val), '{') || str_starts_with(trim($val), '['))) {
+            $decoded = json_decode($val, true);
+            if (json_last_error() === JSON_ERROR_NONE) $settings[$key] = $decoded;
+        }
+    }
+  @endphp
+  @if(app()->environment('local') && request()->is('preview-*'))
+    <style>
+      body { padding-left: 250px !important; }
+    </style>
+    <div style="position: fixed; top: 0; left: 0; bottom: 0; width: 250px; background-color: #0f172a; color: #f8fafc; padding: 24px; box-sizing: border-box; overflow-y: auto; z-index: 9999;">
+      <h3 style="margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 20px;">Email Previews</h3>
+      <ul style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-invoice-issued" style="color: {{ request()->is('preview-invoice-issued') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-invoice-issued') ? '600' : '400' }}; display: block;">Invoice Issued</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-payment-due" style="color: {{ request()->is('preview-payment-due') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-payment-due') ? '600' : '400' }}; display: block;">Payment Due</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-payment-overdue" style="color: {{ request()->is('preview-payment-overdue') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-payment-overdue') ? '600' : '400' }}; display: block;">Payment Overdue</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-payment-receipt" style="color: {{ request()->is('preview-payment-receipt') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-payment-receipt') ? '600' : '400' }}; display: block;">Payment Receipt</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-bi-monthly" style="color: {{ request()->is('preview-bi-monthly') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-bi-monthly') ? '600' : '400' }}; display: block;">Bi-Monthly Statement</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-project-quotation" style="color: {{ request()->is('preview-project-quotation') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-project-quotation') ? '600' : '400' }}; display: block;">Project Quotation</a></li>
+        <li style="margin-bottom: 16px;"><a target="_parent" href="/preview-feedback-request" style="color: {{ request()->is('preview-feedback-request') ? '#ffffff' : '#94a3b8' }}; text-decoration: none; font-weight: {{ request()->is('preview-feedback-request') ? '600' : '400' }}; display: block;">Feedback Request</a></li>
+      </ul>
+      <div style="margin-top: 32px; font-size: 11px; color: #475569; line-height: 1.5;">
+        <em>This sidebar is only visible in local dev when viewing preview routes.</em>
+      </div>
+    </div>
+  @endif
+
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-bg" style="background-color: #f8fafc; padding: 0px;">
     <tr>
       <td align="center">

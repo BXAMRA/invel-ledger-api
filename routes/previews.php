@@ -33,41 +33,30 @@ Route::get("/preview-bi-monthly", function () {
 
   if (!$customer) return "No customer with pending invoices found in the database.";
 
-  $invoicesData = [];
   $pdfPaths = [];
   
-  $settings = Setting::query()->pluck("value", "key")->toArray();
-  $wallets = isset($settings["company.mobileWallets"]) ? json_decode($settings["company.mobileWallets"], true) : [];
-  $primaryWallet = null;
-  if (is_array($wallets)) {
-    foreach ($wallets as $w) {
-      if (empty($w["_deleted"])) {
-        $primaryWallet = $w;
-        break;
-      }
-    }
-  }
+  $settings = Setting::query()->pluck("value", "key")->map(function ($value) {
+    $decoded = json_decode($value, true);
+    return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
+  })->toArray();
 
   foreach ($customer->documents as $doc) {
-      $link = null;
-      if ($primaryWallet) {
-          $link = PaymentLinkService::generate($primaryWallet["provider"], $primaryWallet["value"], $doc->balance, $doc->document_number);
-      }
-
-      $invoicesData[] = [
-        "invoice_number" => $doc->document_number,
-        "total" => $doc->grand_total,
-        "pending" => $doc->balance,
-        "link" => $link,
-      ];
-
       $generatedPdf = collect($doc->attachments ?? [])->firstWhere("label", "Invoice");
       if ($generatedPdf) {
         $pdfPaths[$doc->document_number] = $generatedPdf["path"];
       }
   }
 
-  return new BiMonthlyMail($invoicesData, $pdfPaths);
+  $mail = new BiMonthlyMail($customer, $customer->documents, $settings, $pdfPaths);
+  $html = $mail->render();
+  $text = view("emails.text.bi_monthly_text", [
+      "customer" => $customer,
+      "documents" => $customer->documents,
+      "settings" => $settings,
+      "pdfPaths" => $pdfPaths,
+      "paymentLinks" => $mail->paymentLinks
+  ])->render();
+  return view("emails.preview_wrapper", compact("html", "text"));
 });
 
 Route::get("/preview-payment-receipt", function () {
@@ -117,7 +106,16 @@ Route::get("/preview-payment-receipt", function () {
     })
     ->all();
 
-  return new PaymentReceiptMail($document, $payment, $otherPendingInvoices, $settings);
+  $mail = new PaymentReceiptMail($document, $payment, $otherPendingInvoices, $settings);
+  $html = $mail->render();
+  $text = view("emails.text.payment_receipt_text", [
+      "document" => $document,
+      "payment" => $payment,
+      "otherPendingInvoices" => $otherPendingInvoices,
+      "settings" => $settings,
+      "paymentLinks" => $mail->paymentLinks
+  ])->render();
+  return view("emails.preview_wrapper", compact("html", "text"));
 });
 
 Route::get("/preview-payment-due", function () {
@@ -189,5 +187,12 @@ Route::get("/preview-payment-overdue", function () {
   
   $settings = Setting::query()->pluck("value", "key")->toArray();
   
-  return new PaymentOverdueMail($document, $settings);
+  $mail = new PaymentOverdueMail($document, $settings);
+  $html = $mail->render();
+  $text = view("emails.text.payment_overdue_text", [
+      "document" => $document,
+      "settings" => $settings,
+      "paymentLinks" => $mail->paymentLinks
+  ])->render();
+  return view("emails.preview_wrapper", compact("html", "text"));
 });

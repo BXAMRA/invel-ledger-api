@@ -38,7 +38,7 @@ class PaymentDueMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.payment_due");
+    return new Content(view: "emails.html.payment_due");
   }
 
   /**

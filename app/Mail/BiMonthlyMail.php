@@ -2,22 +2,57 @@
 
 namespace App\Mail;
 
+use App\Models\Customer;
+use App\Services\PaymentLinkService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Mail\Mailables\Attachment;
-use App\Models\Setting;
 
 class BiMonthlyMail extends BaseMailable
 {
   use Queueable, SerializesModels;
 
+  /** @var array<string, array<string, string>> All generated payment links keyed by document_number then provider name. */
+  public array $paymentLinks = [];
+
   /**
-   * @param array<int, mixed> $invoices
+   * @param Customer $customer
+   * @param \Illuminate\Database\Eloquent\Collection|array $documents
+   * @param array<string, mixed> $settings
    * @param array<string, string> $pdfPaths
    */
-  public function __construct(public array $invoices, public array $pdfPaths = []) {}
+  public function __construct(public Customer $customer, public $documents, public array $settings = [], public array $pdfPaths = [])
+  {
+    $wallets = $settings["company.mobileWallets"] ?? [];
+
+    if (is_string($wallets)) {
+      $wallets = json_decode($wallets, true) ?? [];
+    }
+
+    foreach ($this->documents as $doc) {
+      $this->paymentLinks[$doc->document_number] = [];
+      foreach ($wallets as $wallet) {
+        if (!empty($wallet["_deleted"])) {
+          continue;
+        }
+
+        $provider = strtolower(trim($wallet["provider"] ?? ""));
+        $receiverId = trim($wallet["value"] ?? "");
+
+        if (!$provider || !$receiverId) {
+          continue;
+        }
+
+        $link = PaymentLinkService::generate(provider: $provider, receiverId: $receiverId, amount: (float) $doc->balance, note: $doc->document_number);
+
+        if ($link) {
+          $this->paymentLinks[$doc->document_number][$provider] = $link;
+        }
+      }
+    }
+  }
 
   public function envelope(): Envelope
   {
@@ -26,18 +61,11 @@ class BiMonthlyMail extends BaseMailable
 
   public function content(): Content
   {
-    $settings = Setting::query()
-      ->pluck("value", "key")
-      ->map(function ($value) {
-        $decoded = json_decode($value, true);
-        return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
-      })
-      ->toArray();
-
     return new Content(
-      view: "emails.bi_monthly",
+      view: "emails.html.bi_monthly",
+      text: "emails.text.bi_monthly_text",
       with: [
-        "settings" => $settings,
+        "paymentLinks" => $this->paymentLinks,
       ],
     );
   }

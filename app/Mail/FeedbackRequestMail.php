@@ -27,7 +27,7 @@ class FeedbackRequestMail extends BaseMailable
 
   public function content(): Content
   {
-    return new Content(view: "emails.feedback_request");
+    return new Content(view: "emails.html.feedback_request");
   }
 
   /**

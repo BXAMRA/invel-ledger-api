@@ -36,11 +36,14 @@
   @endif
 
 
-  <!-- Parse Mobile Wallets JSON -->
+  <!-- Parse Mobile Wallets -->
   @php
-    $rawWallets = json_decode($settings['company.mobileWallets'] ?? '[]', true);
+    $rawWallets = $settings['company.mobileWallets'] ?? [];
+    if (is_string($rawWallets)) {
+        $rawWallets = json_decode($rawWallets, true) ?? [];
+    }
     $activeWallets = is_array($rawWallets) ? array_filter($rawWallets, function($w) {
-        return !isset($w['_deleted']) || $w['_deleted'] === false;
+        return empty($w['_deleted']);
     }) : [];
   @endphp
 
@@ -87,34 +90,42 @@
       <tr>
         <td valign="top" style="padding-top: 20px; border-top: 1px dashed #cbd5e1;">
           <strong style="color: #0f172a; font-size: 13px; display: block; margin-bottom: 12px;">Mobile Wallets & Online Payment</strong>
-
-          <!-- Text Details for Wallets -->
-          @if(!empty($activeWallets))
-          <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size: 13px; color: #475569; margin-bottom: 12px;">
-            @foreach($activeWallets as $wallet)
-            <tr>
-              <td style="padding-bottom: 6px; width: 85px; color: #64748b;">{{ $wallet['provider'] ?? 'Wallet' }}:</td>
-              <td style="padding-bottom: 6px; color: #0f172a; font-weight: 500;">{{ $wallet['value'] ?? '' }}</td>
-            </tr>
-            @endforeach
-          </table>
-          @endif
-
-          <!-- Payment Buttons -->
-          @if(!empty($paymentLinks))
-          <table cellspacing="0" cellpadding="0" border="0">
-            <tr>
-              @foreach($paymentLinks as $provider => $link)
-              <td align="center" style="padding-right: 8px; padding-bottom: 8px;">
-                <a href="{{ $link }}"
-                   style="font-size: 12px; font-weight: bold; color: #ffffff; text-decoration: none; display: inline-block; padding: 10px 18px; background-color: #2563eb; border-radius: 4px;">
-                  Pay Now via {{ strtoupper($provider) }}
-                </a>
-              </td>
+          <table width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size: 13px; color: #475569;">
+            @php $handledProviders = []; @endphp
+            @if(!empty($activeWallets))
+              @foreach($activeWallets as $wallet)
+                @php 
+                  $provider = $wallet['provider'] ?? 'Wallet'; 
+                  $provLower = strtolower($provider);
+                  $handledProviders[] = $provLower;
+                  $link = $paymentLinks[$provider] ?? $paymentLinks[$provLower] ?? $paymentLinks[strtoupper($provider)] ?? null;
+                @endphp
+                <tr>
+                  <td style="padding-bottom: 10px; width: 85px; color: #64748b; vertical-align: middle;">{{ $provider }}:</td>
+                  <td style="padding-bottom: 10px; color: #0f172a; font-weight: 500; vertical-align: middle;">{{ $wallet['value'] ?? '' }}</td>
+                  <td style="padding-bottom: 10px; text-align: right; vertical-align: middle;">
+                    @if($link)
+                      <a href="{{ $link }}" style="font-size: 12px; font-weight: bold; color: #ffffff; text-decoration: none; display: inline-block; padding: 8px 14px; background-color: #2563eb; border-radius: 4px;">Pay Now via {{ strtoupper($provider) }}</a>
+                    @endif
+                  </td>
+                </tr>
               @endforeach
-            </tr>
+            @endif
+
+            @if(!empty($paymentLinks))
+              @foreach($paymentLinks as $provider => $link)
+                @if(!in_array(strtolower($provider), $handledProviders))
+                <tr>
+                  <td style="padding-bottom: 10px; width: 85px; color: #64748b; vertical-align: middle;">{{ strtoupper($provider) }}:</td>
+                  <td style="padding-bottom: 10px; color: #0f172a; font-weight: 500; vertical-align: middle;">Online Link</td>
+                  <td style="padding-bottom: 10px; text-align: right; vertical-align: middle;">
+                    <a href="{{ $link }}" style="font-size: 12px; font-weight: bold; color: #ffffff; text-decoration: none; display: inline-block; padding: 8px 14px; background-color: #2563eb; border-radius: 4px;">Pay Now via {{ strtoupper($provider) }}</a>
+                  </td>
+                </tr>
+                @endif
+              @endforeach
+            @endif
           </table>
-          @endif
         </td>
       </tr>
       @endif
@@ -146,7 +157,8 @@
             <span style="color: #dc2626; font-size: 13px; font-weight: 600;">Pending: {{ $settings['invoice.currency'] ?? '₹' }}{{ number_format($otherInvoice['pending'], 2) }}</span>
           </td>
           <td style="padding: 14px 16px; text-align: right; vertical-align: middle; width: 30%;">
-            <a href="{{ $otherInvoice['link'] }}" style="display: inline-block; padding: 8px 16px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 12px; border-radius: 4px;">Pay Online</a>
+            @php $provider = count($activeWallets) > 0 ? $activeWallets[array_key_first($activeWallets)]['provider'] : 'WALLET'; @endphp
+            <a href="{{ $otherInvoice['link'] }}" style="display: inline-block; padding: 8px 16px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 12px; border-radius: 4px;">Pay Now via {{ strtoupper($provider) }}</a>
           </td>
         </tr>
   </table>
