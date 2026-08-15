@@ -28,7 +28,7 @@ class BackupController extends Controller
     Setting::query()->updateOrCreate(["key" => "last_export_timestamp"], ["value" => $timestamp]);
 
     $backup = [
-      "version" => "2.0",
+      "version" => "2.1",
       "timestamp" => $timestamp,
       "users" => User::all()
         ->makeVisible(["password", "remember_token"])
@@ -60,8 +60,8 @@ class BackupController extends Controller
 
     $data = json_decode(file_get_contents($request->file("file")->getRealPath()), true);
 
-    if (!isset($data["version"]) || $data["version"] !== "2.0") {
-      return $this->error("Invalid backup format. Only standard version 2.0 backups are supported.", 400);
+    if (!isset($data["version"]) || !in_array($data["version"], ["2.0", "2.1"])) {
+      return $this->error("Invalid backup format. Only standard version 2.0 or 2.1 backups are supported.", 400);
     }
 
     DB::transaction(function () use ($data) {
@@ -105,6 +105,9 @@ class BackupController extends Controller
       }
       if (isset($data["services"])) {
         $prepare($data["services"]);
+        foreach ($data["services"] as &$service) {
+          unset($service["unit"], $service["pricing_type"]);
+        }
         Service::query()->insert($data["services"]);
       }
 

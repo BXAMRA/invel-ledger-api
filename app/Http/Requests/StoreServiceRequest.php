@@ -25,8 +25,6 @@ class StoreServiceRequest extends FormRequest
       "description" => ["nullable", "string"],
       "base_price" => ["required", "numeric", "min:0"],
       "tax_rate" => ["required", "numeric", "min:0"],
-      "unit" => ["required", "string", "max:50"],
-      "pricing_type" => ["required", "string", "max:50"],
       "default_deliverables" => ["nullable", "array"],
       "default_deliverables.*" => ["nullable", "string"],
       "deliverables_heading" => ["nullable", "string"],

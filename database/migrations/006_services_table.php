@@ -11,11 +11,9 @@ return new class extends Migration {
       $table->id();
       $table->string("name");
       $table->text("description")->nullable();
-      $table->decimal("base_price", 15, 2)->default(0);
-      $table->decimal("tax_rate", 5, 2)->default(0);
-      $table->string("unit")->default("fixed");
-      $table->string("pricing_type")->default("fixed");
-      $table->text("default_deliverables")->nullable();
+      $table->decimal("base_price", 15, 2)->default(0.0);
+      $table->decimal("tax_rate", 5, 2)->default(0.0);
+      $table->json("default_deliverables")->nullable();
       $table->string("deliverables_heading")->nullable();
       $table->timestamps();
     });
