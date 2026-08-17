@@ -10,12 +10,13 @@ use App\Http\Controllers\ServiceBundleController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\SyncController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/ping", function () {
-  return response()->json(["status" => "ok", "version" => "0.35.9"]);
+  return response()->json(["status" => "ok", "version" => "0.36.0"]);
 });
 Route::post("/login", [AuthController::class, "login"]);
 Route::post("/cleanup-token", [AuthController::class, "cleanupToken"]);
@@ -43,6 +44,9 @@ Route::middleware("auth:sanctum")->group(function () {
   Route::apiResource("payments", PaymentController::class);
   Route::post("users/{user}/reset-password", [UserController::class, "resetPassword"]);
   Route::apiResource("users", UserController::class);
+
+  // Sync
+  Route::post("/sync", [SyncController::class, "sync"]);
 
   // Backup
   Route::get("/backup", [BackupController::class, "export"]);
