@@ -8,16 +8,16 @@ return new class extends Migration {
   public function up(): void
   {
     Schema::create("service_bundles", function (Blueprint $table) {
-      $table->id();
+      $table->uuid('id')->primary();
       $table->string("name");
       $table->text("description")->nullable();
       $table->timestamps();
     });
 
     Schema::create("service_bundle_services", function (Blueprint $table) {
-      $table->id();
-      $table->foreignId("service_bundle_id")->constrained()->cascadeOnDelete();
-      $table->foreignId("service_id")->constrained()->cascadeOnDelete();
+      $table->uuid('id')->primary();
+      $table->foreignUuid("service_bundle_id")->constrained()->cascadeOnDelete();
+      $table->foreignUuid("service_id")->constrained()->cascadeOnDelete();
       $table->timestamps();
     });
   }

@@ -8,8 +8,8 @@ return new class extends Migration {
   public function up(): void
   {
     Schema::create("payments", function (Blueprint $table) {
-      $table->id();
-      $table->foreignId("document_id")->constrained()->cascadeOnDelete();
+      $table->uuid('id')->primary();
+      $table->foreignUuid("document_id")->constrained()->cascadeOnDelete();
       $table->date("payment_date");
       $table->decimal("amount", 15, 2);
       $table->string("payment_method")->nullable();

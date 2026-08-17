@@ -8,9 +8,9 @@ return new class extends Migration {
   public function up(): void
   {
     Schema::create("document_items", function (Blueprint $table) {
-      $table->id();
-      $table->foreignId("document_id")->constrained()->cascadeOnDelete();
-      $table->foreignId("service_id")->nullable()->constrained()->nullOnDelete();
+      $table->uuid('id')->primary();
+      $table->foreignUuid("document_id")->constrained()->cascadeOnDelete();
+      $table->foreignUuid("service_id")->nullable()->constrained()->nullOnDelete();
       $table->string("name");
       $table->text("description")->nullable();
       $table->string("deliverables_heading")->nullable();

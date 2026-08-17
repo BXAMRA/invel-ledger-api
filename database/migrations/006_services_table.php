@@ -8,7 +8,7 @@ return new class extends Migration {
   public function up(): void
   {
     Schema::create("services", function (Blueprint $table) {
-      $table->id();
+      $table->uuid('id')->primary();
       $table->string("name");
       $table->text("description")->nullable();
       $table->decimal("base_price", 15, 2)->default(0.0);

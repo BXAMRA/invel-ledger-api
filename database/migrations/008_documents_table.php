@@ -8,8 +8,8 @@ return new class extends Migration {
   public function up(): void
   {
     Schema::create("documents", function (Blueprint $table) {
-      $table->id();
-      $table->foreignId("customer_id")->constrained()->cascadeOnDelete();
+      $table->uuid('id')->primary();
+      $table->foreignUuid("customer_id")->constrained()->cascadeOnDelete();
       $table->string("type");
       $table->string("document_number")->unique();
       $table->date("issue_date");

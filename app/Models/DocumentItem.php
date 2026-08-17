@@ -2,33 +2,36 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DocumentItem extends Model
 {
-    protected $guarded = [];
+  use HasUuids;
 
-    protected function casts(): array
-    {
-        return [
-            'deliverables' => 'array',
-        ];
-    }
+  protected $guarded = [];
 
-    /**
-     * @return BelongsTo<Document, DocumentItem>
-     */
-    public function document(): BelongsTo
-    {
-        return $this->belongsTo(Document::class);
-    }
+  protected function casts(): array
+  {
+    return [
+      "deliverables" => "array",
+    ];
+  }
 
-    /**
-     * @return BelongsTo<Service, DocumentItem>
-     */
-    public function service(): BelongsTo
-    {
-        return $this->belongsTo(Service::class);
-    }
+  /**
+   * @return BelongsTo<Document, DocumentItem>
+   */
+  public function document(): BelongsTo
+  {
+    return $this->belongsTo(Document::class);
+  }
+
+  /**
+   * @return BelongsTo<Service, DocumentItem>
+   */
+  public function service(): BelongsTo
+  {
+    return $this->belongsTo(Service::class);
+  }
 }
